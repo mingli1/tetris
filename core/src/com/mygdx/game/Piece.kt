@@ -14,6 +14,7 @@ class Piece(
     }
 
     fun init(spawnX: Int, spawnY: Int) {
+        rotationIndex = 0
         initSquares(squares, spawnX, spawnY)
     }
 
@@ -87,8 +88,9 @@ class Piece(
         }
     }
 
-    private fun performOffsetTests(prevRotationIndex: Int, nextRotationIndex: Int): Boolean {
+    private fun performOffsetTests(prevRotationIndex: Int, newRotationIndex: Int): Boolean {
         val offsetData = when (pieceType) {
+            PieceType.O -> O_OFFSET_DATA
             PieceType.I -> I_OFFSET_DATA
             else -> TSZLJ_OFFSET_DATA
         }
@@ -99,8 +101,8 @@ class Piece(
 
         for (i in 0 until 5) {
             val offset1 = offsetData[i][prevRotationIndex]
-            val offset2 = offsetData[i][nextRotationIndex]
-            endX = offset1.x - offset2.y
+            val offset2 = offsetData[i][newRotationIndex]
+            endX = offset1.x - offset2.x
             endY = offset1.y - offset2.y
 
             if (canMove(endX, endY)) {
