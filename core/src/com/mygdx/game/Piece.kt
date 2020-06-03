@@ -32,6 +32,8 @@ class Piece(
 
     fun canMove(x: Int, y: Int) = squares.all { it.canMoveTo(it.x + x, it.y + y) }
 
+    fun isToppedOut() = squares.all { it.y >= grid.height }
+
     fun rotate(clockwise: Boolean, performOffsetTests: Boolean = true) {
         if (pieceType == PieceType.O) return
 

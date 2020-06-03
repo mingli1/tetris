@@ -15,7 +15,7 @@ private const val LOCK_DELAY_3 = 20f
 
 class Grid(
     private val width: Int,
-    private val height: Int,
+    val height: Int,
     private val screenX: Float,
     private val screenY: Float,
     private val res: Resources
@@ -44,7 +44,7 @@ class Grid(
     private var holdPiece: Piece? = null
     private val bag = mutableListOf<Piece>()
 
-    private val content = Array(height) { y ->
+    private val content = Array(height * 2) { y ->
         Array(width) { x ->
             Unit(Square(this, PieceType.None), x, y, false)
         }
@@ -114,7 +114,6 @@ class Grid(
     }
 
     fun isUnitEmpty(x: Int, y: Int): Boolean {
-        if (y >= height) return true
         return !content[y][x].filled
     }
 
@@ -127,12 +126,13 @@ class Grid(
         content[y][x].filled = true
     }
 
-    fun isWithinHeight(y: Int) = y < height
+    fun isWithinHeight(y: Int) = y < height * 2
 
     fun hardDrop() {
         instantSoftDrop()
         currPiece.lock()
-        currPiece = getNextPiece()
+        if (currPiece.isToppedOut()) reset()
+        else currPiece = getNextPiece()
     }
 
     fun instantDas(right: Boolean) {
@@ -181,7 +181,7 @@ class Grid(
     }
 
     fun reset() {
-        for (y in 0 until height) {
+        for (y in 0 until height * 2) {
             for (x in 0 until width) {
                 content[y][x].let {
                     it.filled = false
@@ -207,11 +207,13 @@ class Grid(
     }
 
     fun render(batch: Batch) {
-        for (y in 0 until height) {
+        for (y in 0 until height * 2) {
             for (x in 0 until width) {
-                batch.draw(res.getTexture("unit"),
-                    screenX + content[y][x].x * SQUARE_SIZE,
-                    screenY + content[y][x].y * SQUARE_SIZE)
+                if (y < height) {
+                    batch.draw(res.getTexture("unit"),
+                        screenX + content[y][x].x * SQUARE_SIZE,
+                        screenY + content[y][x].y * SQUARE_SIZE)
+                }
 
                 if (content[y][x].filled) {
                     batch.draw(res.getSquare(content[y][x].square.pieceType),
