@@ -19,9 +19,10 @@ class Piece(
     }
 
     fun lock() {
+        grid.getLineClears(squares)
         squares.forEach { it.lock() }
         grid.canHold = true
-        grid.attemptLineClears()
+        grid.clearLines()
     }
 
     fun move(x: Int, y: Int): Boolean {

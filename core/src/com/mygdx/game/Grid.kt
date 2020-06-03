@@ -5,7 +5,7 @@ import com.badlogic.gdx.graphics.g2d.Batch
 private const val SQUARE_SIZE = 32
 private const val BAG_SIZE = 7
 private const val NUM_PREVIEWS = 5
-private const val GRAVITY = 0.1
+private const val GRAVITY = 1
 // lock delay from soft drop
 private const val LOCK_DELAY_1 = 0.5f
 // lock delay from soft drop and left or right movement (reset from rotation)
@@ -49,6 +49,8 @@ class Grid(
             Unit(Square(this, PieceType.None), x, y, false)
         }
     }
+    private var startRow = -1
+    private var numLinesToClear = 0
 
     private var gravityTimer = 0f
 
@@ -63,6 +65,8 @@ class Grid(
 
     var rightHeld = false
     var leftHeld = false
+
+    val stats = Array(14) { 0f }
 
     init { reset() }
 
@@ -158,15 +162,36 @@ class Grid(
         }
     }
 
-    fun attemptLineClears() {
-        var startRow = -1
-        var numLinesToClear = 0
+    fun getLineClears(squares: Array<Square>) {
+        startRow = -1
+        numLinesToClear = 0
+
         for (y in height - 1 downTo 0) {
-            if (content[y].all { it.filled }) {
+            var rowFilled = true
+            for (x in 0 until width) {
+                if (!(content[y][x].filled || squares.any { it.x == x && it.y == y })) {
+                    rowFilled = false
+                }
+            }
+            if (rowFilled) {
                 if (startRow == -1) startRow = y
                 numLinesToClear++
             }
         }
+
+        if (numLinesToClear == 0) return
+
+        if (currPiece.pieceType == PieceType.T) {
+            // t spin
+            if (!currPiece.canMove(-1, 0) && !currPiece.canMove(1, 0) && !currPiece.canMove(0, 1)) {
+                applyTSpin(numLinesToClear)
+                return
+            }
+        }
+        applyLineClears(numLinesToClear)
+    }
+
+    fun clearLines() {
         if (numLinesToClear == 0) return
         for (i in startRow + 1 until height) {
             content[i - numLinesToClear].forEachIndexed { index, unit ->
@@ -177,6 +202,23 @@ class Grid(
                 topUnit.filled = false
                 topUnit.square.pieceType = PieceType.None
             }
+        }
+    }
+
+    private fun applyLineClears(lines: Int) {
+        when (lines) {
+            1 -> stats[SINGLE]++
+            2 -> stats[DOUBLE]++
+            3 -> stats[TRIPLE]++
+            4 -> stats[QUAD]++
+        }
+    }
+
+    private fun applyTSpin(lines: Int) {
+        when (lines) {
+            1 -> stats[TSS]++
+            2 -> stats[TSD]++
+            3 -> stats[TST]++
         }
     }
 
@@ -194,6 +236,7 @@ class Grid(
         currPiece = getNextPiece()
         holdPiece = null
         canHold = true
+        for (i in stats.indices) stats[i] = 0f
     }
 
     fun toggleLockDelay2(start: Boolean) {
