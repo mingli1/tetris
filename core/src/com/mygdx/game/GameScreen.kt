@@ -25,6 +25,7 @@ class GameScreen(private val game: Tetris) : Screen {
 
     private fun update(dt: Float) {
         inputHandler.update(dt)
+        grid.update(dt)
     }
 
     override fun render(dt: Float) {

@@ -5,6 +5,13 @@ import com.badlogic.gdx.graphics.g2d.Batch
 private const val SQUARE_SIZE = 32
 private const val BAG_SIZE = 7
 private const val NUM_PREVIEWS = 5
+private const val GRAVITY = 0.3
+// lock delay from soft drop
+private const val LOCK_DELAY_1 = 0.5f
+// lock delay from soft drop and left or right movement (reset from rotation)
+private const val LOCK_DELAY_2 = 5f
+// max amount of time piece locks no matter
+private const val LOCK_DELAY_3 = 20f
 
 class Grid(
     private val width: Int,
@@ -43,7 +50,57 @@ class Grid(
         }
     }
 
+    private var gravityTimer = 0f
+
+    private var lockDelay1Timer = 0f
+    private var lockDelay2Timer = 0f
+    private var startLockDelay2 = false
+    private var lockDelay3Timer = 0f
+
+    private var startRotationTimer = false
+    private var rotationTimer = 0f
+    private var longRotationTimer = 0f
+
     init { reset() }
+
+    fun update(dt: Float) {
+        gravityTimer += dt
+        if (gravityTimer >= GRAVITY) {
+            currPiece.move(0, -1)
+            gravityTimer = 0f
+        }
+
+        if (!currPiece.canMove(0, -1) && !startLockDelay2) {
+            if (startRotationTimer) {
+                longRotationTimer += dt
+                rotationTimer += dt
+                if (rotationTimer >= LOCK_DELAY_1) {
+                    hardDrop()
+                    startRotationTimer = false
+                }
+                if (longRotationTimer >= LOCK_DELAY_2) {
+                    hardDrop()
+                    startRotationTimer = false
+                }
+            } else {
+                lockDelay1Timer += dt
+                if (lockDelay1Timer >= LOCK_DELAY_1) hardDrop()
+            }
+        } else {
+            lockDelay1Timer = 0f
+        }
+
+        if (startLockDelay2) {
+            lockDelay2Timer += dt
+            if (lockDelay2Timer >= LOCK_DELAY_2) {
+                startLockDelay2 = false
+                hardDrop()
+            }
+        }
+
+        lockDelay3Timer += dt
+        if (lockDelay3Timer >= LOCK_DELAY_3) hardDrop()
+    }
 
     fun isWithinBounds(x: Int, y: Int): Boolean {
         return x in 0 until width && y in 0 until height * 2
@@ -132,6 +189,16 @@ class Grid(
         canHold = true
     }
 
+    fun toggleLockDelay2(start: Boolean) {
+        startLockDelay2 = start
+    }
+
+    fun onRotate() {
+        startRotationTimer = true
+        rotationTimer = 0f
+        lockDelay2Timer = 0f
+    }
+
     fun render(batch: Batch) {
         for (y in 0 until height) {
             for (x in 0 until width) {
@@ -157,7 +224,7 @@ class Grid(
         holdPiece?.let { piece ->
             piece.squares.forEach {
                 batch.draw(res.getSquare(piece.pieceType),
-                    (screenX - 128) + (it.x * SQUARE_SIZE),
+                    (screenX - 96) + (it.x * SQUARE_SIZE),
                     (screenY + ((height - 4) * SQUARE_SIZE)) + (it.y * SQUARE_SIZE))
             }
         }
@@ -189,11 +256,22 @@ class Grid(
             init(4, height + 1)
         }
         if (bag.size <= BAG_SIZE) addToBag()
+
+        resetTimers()
         return nextPiece
     }
 
     private fun addToBag() {
         PIECES_POOL.shuffle()
         bag.addAll(PIECES_POOL)
+    }
+
+    private fun resetTimers() {
+        lockDelay1Timer = 0f
+        lockDelay2Timer = 0f
+        lockDelay3Timer = 0f
+
+        rotationTimer = 0f
+        longRotationTimer = 0f
     }
 }

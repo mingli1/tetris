@@ -25,7 +25,3 @@ val I_OFFSET_DATA = arrayOf(
     arrayOf(Vector2Int(-1, 0), Vector2Int(0, 1), Vector2Int(1, 0), Vector2Int(0, -1)),
     arrayOf(Vector2Int(2, 0), Vector2Int(0, -2), Vector2Int(-2, 0), Vector2Int(0, 2))
 )
-
-val O_OFFSET_DATA = arrayOf(
-    arrayOf(Vector2Int(0, 0), Vector2Int(0, -1), Vector2Int(-1, -1), Vector2Int(-1, 0))
-)

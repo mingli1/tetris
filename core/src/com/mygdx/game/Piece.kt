@@ -90,7 +90,6 @@ class Piece(
 
     private fun performOffsetTests(prevRotationIndex: Int, newRotationIndex: Int): Boolean {
         val offsetData = when (pieceType) {
-            PieceType.O -> O_OFFSET_DATA
             PieceType.I -> I_OFFSET_DATA
             else -> TSZLJ_OFFSET_DATA
         }
