@@ -65,8 +65,6 @@ class InputTuning(
 
 class InputHandler(private val grid: Grid) : InputProcessor {
 
-    private var left = false
-    private var right = false
     private val leftTuning = InputTuning(grid, false)
     private val rightTuning = InputTuning(grid, true)
 
@@ -92,18 +90,18 @@ class InputHandler(private val grid: Grid) : InputProcessor {
     override fun keyUp(keycode: Int): Boolean {
         when (keycode) {
             Input.Keys.RIGHT -> {
-                right = false
+                grid.rightHeld = false
 
                 if (leftTuning.inProgress) leftTuning.start()
                 rightTuning.end()
-                if (!left) grid.toggleLockDelay2(false)
+                if (!grid.leftHeld) grid.toggleLockDelay2(false)
             }
             Input.Keys.LEFT -> {
-                left = false
+                grid.leftHeld = false
 
                 if (rightTuning.inProgress) rightTuning.start()
                 leftTuning.end()
-                if (!right) grid.toggleLockDelay2(false)
+                if (!grid.rightHeld) grid.toggleLockDelay2(false)
             }
             Input.Keys.DOWN -> {
                 startSoftDrop = false
@@ -115,7 +113,7 @@ class InputHandler(private val grid: Grid) : InputProcessor {
     override fun keyDown(keycode: Int): Boolean {
         when (keycode) {
             Input.Keys.RIGHT -> {
-                right = true
+                grid.rightHeld = true
 
                 if (leftTuning.inProgress) leftTuning.reset()
                 rightTuning.start()
@@ -123,7 +121,7 @@ class InputHandler(private val grid: Grid) : InputProcessor {
                 if (grid.currPiece.canMove(1, 0)) grid.toggleLockDelay2(true)
             }
             Input.Keys.LEFT -> {
-                left = true
+                grid.leftHeld = true
 
                 if (rightTuning.inProgress) rightTuning.reset()
                 leftTuning.start()

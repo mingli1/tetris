@@ -5,7 +5,7 @@ import com.badlogic.gdx.graphics.g2d.Batch
 private const val SQUARE_SIZE = 32
 private const val BAG_SIZE = 7
 private const val NUM_PREVIEWS = 5
-private const val GRAVITY = 0.3
+private const val GRAVITY = 0.1
 // lock delay from soft drop
 private const val LOCK_DELAY_1 = 0.5f
 // lock delay from soft drop and left or right movement (reset from rotation)
@@ -61,6 +61,9 @@ class Grid(
     private var rotationTimer = 0f
     private var longRotationTimer = 0f
 
+    var rightHeld = false
+    var leftHeld = false
+
     init { reset() }
 
     fun update(dt: Float) {
@@ -91,10 +94,14 @@ class Grid(
         }
 
         if (startLockDelay2) {
-            lockDelay2Timer += dt
-            if (lockDelay2Timer >= LOCK_DELAY_2) {
+            if ((leftHeld && !currPiece.canMove(-1, 0)) || (rightHeld && !currPiece.canMove(1, 0))) {
                 startLockDelay2 = false
-                hardDrop()
+            } else {
+                lockDelay2Timer += dt
+                if (lockDelay2Timer >= LOCK_DELAY_2) {
+                    startLockDelay2 = false
+                    hardDrop()
+                }
             }
         }
 
