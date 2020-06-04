@@ -25,6 +25,7 @@ const val DOUBLE = 10
 const val TRIPLE = 11
 const val QUAD = 12
 const val PC = 13
+const val TIME = 14
 
 private const val V_WIDTH = 800f
 private const val V_HEIGHT = 800f
@@ -53,7 +54,8 @@ class GameScreen(private val game: Tetris) : Screen {
         "DOUBLE",
         "TRIPLE",
         "QUAD",
-        "PC"
+        "PC",
+        "TIME"
     )
     private val labelStyle = Label.LabelStyle(BitmapFont(), Color.WHITE)
     private val statsLabels = statStrings.mapIndexed { index, s ->

@@ -51,7 +51,12 @@ class Grid(
     }
     private var startRow = -1
     private var numLinesToClear = 0
+    var piecesPlaced = 0
+    private var combo = 0
+    private var b2b = 0
+    private var attack = 0
 
+    private var clockTimer = 0f
     private var gravityTimer = 0f
 
     private var lockDelay1Timer = 0f
@@ -66,11 +71,19 @@ class Grid(
     var rightHeld = false
     var leftHeld = false
 
-    val stats = Array(14) { 0f }
+    val stats = Array(15) { 0f }
 
     init { reset() }
 
     fun update(dt: Float) {
+        clockTimer += dt
+        stats[TIME] = clockTimer
+        stats[PPS] = piecesPlaced / clockTimer
+        stats[COMBO] = combo.toFloat()
+        stats[B2B] = b2b.toFloat()
+        stats[ATT] = attack.toFloat()
+        stats[APM] = attack / clockTimer * 60
+
         gravityTimer += dt
         if (gravityTimer >= GRAVITY) {
             currPiece.move(0, -1)
@@ -179,16 +192,36 @@ class Grid(
             }
         }
 
-        if (numLinesToClear == 0) return
+        if (numLinesToClear <= 0) {
+            combo = 0
+            return
+        } else {
+            combo++
+        }
+
+        attack += when (combo) {
+            1 -> 0
+            2, 3, 4 -> 1
+            5, 6 -> 2
+            7, 8 -> 3
+            9, 10, 11 -> 4
+            else -> 5
+        }
+
+        val applyB2bBonus = b2b > 0
 
         if (currPiece.pieceType == PieceType.T) {
             // t spin
             if (!currPiece.canMove(-1, 0) && !currPiece.canMove(1, 0) && !currPiece.canMove(0, 1)) {
-                applyTSpin(numLinesToClear)
+                applyTSpin(numLinesToClear, applyB2bBonus)
+                b2b++
                 return
             }
         }
-        applyLineClears(numLinesToClear)
+        applyLineClears(numLinesToClear, applyB2bBonus)
+
+        if (numLinesToClear < 4) b2b = 0
+        else b2b++
     }
 
     fun clearLines() {
@@ -203,22 +236,45 @@ class Grid(
                 topUnit.square.pieceType = PieceType.None
             }
         }
-    }
 
-    private fun applyLineClears(lines: Int) {
-        when (lines) {
-            1 -> stats[SINGLE]++
-            2 -> stats[DOUBLE]++
-            3 -> stats[TRIPLE]++
-            4 -> stats[QUAD]++
+        if (content.all { row -> row.all { !it.filled } }) {
+            stats[PC]++
+            attack += 10
         }
     }
 
-    private fun applyTSpin(lines: Int) {
+    private fun applyLineClears(lines: Int, b2b: Boolean) {
         when (lines) {
-            1 -> stats[TSS]++
-            2 -> stats[TSD]++
-            3 -> stats[TST]++
+            1 -> stats[SINGLE]++
+            2 -> {
+                stats[DOUBLE]++
+                attack += 1
+            }
+            3 -> {
+                stats[TRIPLE]++
+                attack += 2
+            }
+            4 -> {
+                stats[QUAD]++
+                attack += if (b2b) 5 else 4
+            }
+        }
+    }
+
+    private fun applyTSpin(lines: Int, b2b: Boolean) {
+        when (lines) {
+            1 -> {
+                stats[TSS]++
+                attack += if (b2b) 3 else 2
+            }
+            2 -> {
+                stats[TSD]++
+                attack += if (b2b) 5 else 4
+            }
+            3 -> {
+                stats[TST]++
+                attack += if (b2b) 7 else 6
+            }
         }
     }
 
@@ -236,6 +292,13 @@ class Grid(
         currPiece = getNextPiece()
         holdPiece = null
         canHold = true
+        piecesPlaced = 0
+        clockTimer = 0f
+
+        combo = 0
+        b2b = 0
+        attack = 0
+
         for (i in stats.indices) stats[i] = 0f
     }
 
@@ -276,7 +339,7 @@ class Grid(
         holdPiece?.let { piece ->
             piece.squares.forEach {
                 batch.draw(res.getSquare(piece.pieceType),
-                    (screenX - 96) + (it.x * SQUARE_SIZE),
+                    (screenX - 128) + (it.x * SQUARE_SIZE),
                     (screenY + ((height - 4) * SQUARE_SIZE)) + (it.y * SQUARE_SIZE))
             }
         }
@@ -319,6 +382,8 @@ class Grid(
     }
 
     private fun resetTimers() {
+        gravityTimer = 0f
+
         lockDelay1Timer = 0f
         lockDelay2Timer = 0f
         lockDelay3Timer = 0f

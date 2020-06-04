@@ -23,6 +23,7 @@ class Piece(
         squares.forEach { it.lock() }
         grid.canHold = true
         grid.clearLines()
+        grid.piecesPlaced++
     }
 
     fun move(x: Int, y: Int): Boolean {
