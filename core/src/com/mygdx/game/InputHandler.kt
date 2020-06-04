@@ -148,6 +148,9 @@ class InputHandler(private val grid: Grid) : InputProcessor {
             Input.Keys.R -> {
                 grid.reset()
             }
+            Input.Keys.G -> {
+                grid.receiveGarbage()
+            }
         }
         return true
     }

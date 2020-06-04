@@ -1,6 +1,7 @@
 package com.mygdx.game
 
 import com.badlogic.gdx.graphics.g2d.Batch
+import com.badlogic.gdx.math.MathUtils
 
 private const val SQUARE_SIZE = 32
 private const val BAG_SIZE = 7
@@ -43,6 +44,7 @@ class Grid(
     var canHold = true
     private var holdPiece: Piece? = null
     private val bag = mutableListOf<Piece>()
+    private val garbage = listOf(4, 7, 2)
 
     private val content = Array(height * 2) { y ->
         Array(width) { x ->
@@ -132,6 +134,55 @@ class Grid(
 
     fun isUnitEmpty(x: Int, y: Int): Boolean {
         return !content[y][x].filled
+    }
+
+    fun receiveGarbage() {
+        var topOfStack = 0
+        for (y in height - 1 downTo 0) {
+            if (content[y].any { it.filled }) {
+                topOfStack = y
+                break
+            }
+        }
+        val lines = garbage.sum()
+
+        for (y in topOfStack downTo 0) {
+            for (x in 0 until width) {
+                if (y + lines < height * 2) {
+                    content[y + lines][x].run {
+                        filled = content[y][x].filled
+                        square.pieceType = content[y][x].square.pieceType
+                    }
+                }
+                content[y][x].run {
+                    filled = false
+                    square.pieceType = PieceType.None
+                }
+            }
+        }
+        var currY = 0
+        for (i in garbage.size - 1 downTo 0) {
+            var numLines = garbage[i]
+            if (currY + numLines > height * 2) {
+               numLines = height * 2 - currY
+            }
+            val holeX = MathUtils.random(width - 1)
+            for (y in currY until currY + numLines) {
+                for (x in 0 until width) {
+                    if (x != holeX) {
+                        content[y][x].run {
+                            filled = true
+                            square.pieceType = PieceType.Garbage
+                        }
+                    }
+                }
+            }
+            currY += numLines
+            if (currY >= height * 2) break
+        }
+        // top out
+        if (lines >= height) reset()
+        if (!currPiece.canMove(0, -1)) reset()
     }
 
     fun addSquare(x: Int, y: Int, square: Square) {
@@ -226,7 +277,7 @@ class Grid(
 
     fun clearLines() {
         if (numLinesToClear == 0) return
-        for (i in startRow + 1 until height) {
+        for (i in startRow + 1 until height * 2) {
             content[i - numLinesToClear].forEachIndexed { index, unit ->
                 val topUnit = content[i][index]
                 unit.filled = topUnit.filled

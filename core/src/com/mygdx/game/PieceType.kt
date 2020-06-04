@@ -1,5 +1,14 @@
 package com.mygdx.game
 
 enum class PieceType(val index: Int) {
-    L(3), J(7), S(5), Z(2), I(6), O(4), T(8), None(-1)
+    None(-1),
+    Solid(0),
+    Garbage(1),
+    Z(2),
+    L(3),
+    O(4),
+    S(5),
+    I(6),
+    J(7),
+    T(8),
 }
