@@ -77,7 +77,7 @@ class Grid(
 
     var rightHeld = false
     var leftHeld = false
-    private var hasSolidGarbage = false
+    private var solidGarbageRow = 0
 
     val stats = Array(15) { 0f }
 
@@ -167,7 +167,7 @@ class Grid(
 
     fun addSolidGarbage(numLines: Int) {
         offsetStack(numLines)
-        hasSolidGarbage = true
+        solidGarbageRow = numLines
 
         for (y in 0 until numLines) {
             for (x in 0 until width) {
@@ -348,7 +348,7 @@ class Grid(
         totalAttack = 0
         linesSent = 0
 
-        hasSolidGarbage = false
+        solidGarbageRow = 0
         startLockDelay2 = false
         startGarbageTimer = false
         garbageTimer = 0f
@@ -413,7 +413,7 @@ class Grid(
     private fun receiveGarbage() {
         val lines = garbage.sum()
         offsetStack(lines)
-        var currY = getSolidGarbageTopRow()
+        var currY = solidGarbageRow
         for (i in garbage.size - 1 downTo 0) {
             var numLines = garbage[i]
             if (currY + numLines > height * 2) {
@@ -496,14 +496,14 @@ class Grid(
 
     private fun offsetStack(lines: Int) {
         var topOfStack = 0
-        for (y in height - 1 downTo getSolidGarbageTopRow()) {
+        for (y in height - 1 downTo solidGarbageRow) {
             if (content[y].any { it.filled }) {
                 topOfStack = y
                 break
             }
         }
 
-        for (y in topOfStack downTo getSolidGarbageTopRow()) {
+        for (y in topOfStack downTo solidGarbageRow) {
             for (x in 0 until width) {
                 if (y + lines < height * 2) {
                     content[y + lines][x].run {
@@ -540,13 +540,5 @@ class Grid(
         val totalHeight = height.toFloat() * SQUARE_SIZE
         if (lines > height) return totalHeight
         return (lines / height.toFloat()) * totalHeight
-    }
-
-    private fun getSolidGarbageTopRow(): Int {
-        if (!hasSolidGarbage) return 0
-        for (y in height * 2 - 1 downTo 0) {
-            if (content[y][0].square.pieceType == PieceType.Solid) return y + 1
-        }
-        return 0
     }
 }
