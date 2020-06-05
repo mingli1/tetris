@@ -52,7 +52,7 @@ class Piece(
         }
         if (!performOffsetTests) return
 
-        val offsetResult = performOffsetTests(prevRotationIndex, rotationIndex)
+        val offsetResult = performOffsetTests(prevRotationIndex, rotationIndex, rotation == Rotation.OneEighty)
         if (!offsetResult) rotate(rotation.opposite(), false)
     }
 
@@ -98,25 +98,53 @@ class Piece(
         }
     }
 
-    private fun performOffsetTests(prevRotationIndex: Int, newRotationIndex: Int): Boolean {
-        val offsetData = when (pieceType) {
-            PieceType.I -> I_OFFSET_DATA
-            else -> TSZLJ_OFFSET_DATA
-        }
-
+    private fun performOffsetTests(
+        prevRotationIndex: Int,
+        newRotationIndex: Int,
+        is180: Boolean
+    ): Boolean {
         var movePossible = false
         var endX = 0
         var endY = 0
 
-        for (i in 0 until 5) {
-            val offset1 = offsetData[i][prevRotationIndex]
-            val offset2 = offsetData[i][newRotationIndex]
-            endX = offset1.x - offset2.x
-            endY = offset1.y - offset2.y
+        if (is180) {
+            val offsetData = when (pieceType) {
+                PieceType.I -> I_180_OFFSET_DATA
+                else -> TSZLJ_180_OFFSET_DATA
+            }
+            val index = when {
+                prevRotationIndex == 0 && newRotationIndex == 2 -> 0
+                prevRotationIndex == 1 && newRotationIndex == 3 -> 1
+                prevRotationIndex == 2 && newRotationIndex == 0 -> 2
+                prevRotationIndex == 3 && newRotationIndex == 1 -> 3
+                else -> 0
+            }
 
-            if (canMove(endX, endY)) {
-                movePossible = true
-                break
+            for (i in 0 until 12) {
+                endX = offsetData[index][i].x
+                endY = offsetData[index][i].y
+
+                if (canMove(endX, endY)) {
+                    movePossible = true
+                    break
+                }
+            }
+        } else {
+            val offsetData = when (pieceType) {
+                PieceType.I -> I_OFFSET_DATA
+                else -> TSZLJ_OFFSET_DATA
+            }
+
+            for (i in 0 until 5) {
+                val offset1 = offsetData[prevRotationIndex][i]
+                val offset2 = offsetData[newRotationIndex][i]
+                endX = offset1.x - offset2.x
+                endY = offset1.y - offset2.y
+
+                if (canMove(endX, endY)) {
+                    movePossible = true
+                    break
+                }
             }
         }
 
