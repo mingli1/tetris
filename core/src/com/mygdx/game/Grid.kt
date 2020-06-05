@@ -165,6 +165,22 @@ class Grid(
         content[y][x].filled = true
     }
 
+    fun addSolidGarbage(numLines: Int) {
+        offsetStack(numLines)
+
+        for (y in 0 until numLines) {
+            for (x in 0 until width) {
+                content[y][x].run {
+                    filled = true
+                    square.pieceType = PieceType.Solid
+                }
+            }
+        }
+        // top out
+        if (numLines >= height) reset()
+        if (!currPiece.canMove(0, -1)) reset()
+    }
+
     fun isWithinHeight(y: Int) = y < height * 2
 
     fun hardDrop() {
@@ -205,7 +221,7 @@ class Grid(
         for (y in height - 1 downTo 0) {
             var rowFilled = true
             for (x in 0 until width) {
-                if (!(content[y][x].filled || squares.any { it.x == x && it.y == y })) {
+                if (content[y][x].square.pieceType == PieceType.Solid || !(content[y][x].filled || squares.any { it.x == x && it.y == y })) {
                     rowFilled = false
                 }
             }
@@ -392,29 +408,8 @@ class Grid(
     }
 
     private fun receiveGarbage() {
-        var topOfStack = 0
-        for (y in height - 1 downTo 0) {
-            if (content[y].any { it.filled }) {
-                topOfStack = y
-                break
-            }
-        }
         val lines = garbage.sum()
-
-        for (y in topOfStack downTo 0) {
-            for (x in 0 until width) {
-                if (y + lines < height * 2) {
-                    content[y + lines][x].run {
-                        filled = content[y][x].filled
-                        square.pieceType = content[y][x].square.pieceType
-                    }
-                }
-                content[y][x].run {
-                    filled = false
-                    square.pieceType = PieceType.None
-                }
-            }
-        }
+        offsetStack(lines)
         var currY = 0
         for (i in garbage.size - 1 downTo 0) {
             var numLines = garbage[i]
@@ -494,6 +489,31 @@ class Grid(
 
         resetTimers()
         return nextPiece
+    }
+
+    private fun offsetStack(lines: Int) {
+        var topOfStack = 0
+        for (y in height - 1 downTo 0) {
+            if (content[y].any { it.filled }) {
+                topOfStack = y
+                break
+            }
+        }
+
+        for (y in topOfStack downTo 0) {
+            for (x in 0 until width) {
+                if (y + lines < height * 2) {
+                    content[y + lines][x].run {
+                        filled = content[y][x].filled
+                        square.pieceType = content[y][x].square.pieceType
+                    }
+                }
+                content[y][x].run {
+                    filled = false
+                    square.pieceType = PieceType.None
+                }
+            }
+        }
     }
 
     private fun addToBag() {

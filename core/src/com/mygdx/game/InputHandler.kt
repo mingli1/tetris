@@ -2,6 +2,7 @@ package com.mygdx.game
 
 import com.badlogic.gdx.Input
 import com.badlogic.gdx.InputProcessor
+import com.badlogic.gdx.math.MathUtils
 
 private const val DAS = 0.117f
 private const val ARR = 0f
@@ -149,7 +150,10 @@ class InputHandler(private val grid: Grid) : InputProcessor {
                 grid.reset()
             }
             Input.Keys.G -> {
-                grid.queueGarbage(4)
+                grid.queueGarbage(MathUtils.random(1, 6))
+            }
+            Input.Keys.S -> {
+                grid.addSolidGarbage(10)
             }
         }
         return true
