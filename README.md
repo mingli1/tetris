@@ -1,6 +1,7 @@
 
 # LibGDX Tetris implementation  
-  
+  ![tetrisdemo2](https://user-images.githubusercontent.com/29984767/83883575-a6074b80-a711-11ea-82df-0debf6c10189.gif)
+
 ## Features  
 - Input tuning (DAS/delayed auto shift, ARR/auto repeat rate, SDS/soft drop speed)  
 - 7 bag randomizer and hold  
