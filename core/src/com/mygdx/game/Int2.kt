@@ -1,6 +1,6 @@
 package com.mygdx.game
 
-data class Vector2Int(
+data class Int2(
     var x: Int = 0,
     var y: Int = 0
 )
