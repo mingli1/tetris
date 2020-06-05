@@ -36,18 +36,24 @@ class Piece(
 
     fun isToppedOut() = squares.all { it.y >= grid.height }
 
-    fun rotate(clockwise: Boolean, performOffsetTests: Boolean = true) {
+    fun rotate(rotation: Rotation, performOffsetTests: Boolean = true) {
         if (pieceType == PieceType.O) return
 
         val prevRotationIndex = rotationIndex
-        rotationIndex += if (clockwise) 1 else -1
+        rotationIndex += when (rotation) {
+            Rotation.OneEighty -> 2
+            Rotation.Clockwise -> 1
+            Rotation.Counterclockwise -> -1
+        }
         rotationIndex = mod(rotationIndex, 4)
 
-        squares.forEach { it.rotate(squares[0].x, squares[0].y, clockwise) }
+        repeat(if (rotation == Rotation.OneEighty) 2 else 1) {
+            squares.forEach { it.rotate(squares[0].x, squares[0].y, rotation) }
+        }
         if (!performOffsetTests) return
 
         val offsetResult = performOffsetTests(prevRotationIndex, rotationIndex)
-        if (!offsetResult) rotate(!clockwise, false)
+        if (!offsetResult) rotate(rotation.opposite(), false)
     }
 
     private fun initSquares(squares: Array<Square>, spawnX: Int, spawnY: Int) {

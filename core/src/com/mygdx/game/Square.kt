@@ -25,10 +25,10 @@ class Square(
         return true
     }
 
-    fun rotate(originX: Int, originY: Int, clockwise: Boolean) {
+    fun rotate(originX: Int, originY: Int, rotation: Rotation) {
         val relX = x - originX
         val relY = y - originY
-        val data = if (clockwise) CW_ROTATE_DATA else CCW_ROTATE_DATA
+        val data = if (rotation == Rotation.Clockwise || rotation == Rotation.OneEighty) CW_ROTATE_DATA else CCW_ROTATE_DATA
 
         var newX = (data[0].x * relX) + (data[1].x * relY)
         var newY = (data[0].y * relX) + (data[1].y * relY)

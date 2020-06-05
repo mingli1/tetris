@@ -137,11 +137,15 @@ class InputHandler(private val grid: Grid) : InputProcessor {
             }
             Input.Keys.UP -> {
                 grid.onRotate()
-                grid.currPiece.rotate(true)
+                grid.currPiece.rotate(Rotation.Clockwise)
             }
             Input.Keys.Z -> {
                 grid.onRotate()
-                grid.currPiece.rotate(false)
+                grid.currPiece.rotate(Rotation.Counterclockwise)
+            }
+            Input.Keys.X -> {
+                grid.onRotate()
+                grid.currPiece.rotate(Rotation.OneEighty)
             }
             Input.Keys.SHIFT_LEFT -> {
                 grid.holdCurrPiece()
