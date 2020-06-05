@@ -59,7 +59,7 @@ class GameScreen(private val game: Tetris) : Screen {
     )
     private val labelStyle = Label.LabelStyle(BitmapFont(), Color.WHITE)
     private val statsLabels = statStrings.mapIndexed { index, s ->
-        Label(s, labelStyle).apply { setPosition(100f, 500f - index * 32) }
+        Label(s, labelStyle).apply { setPosition(60f, 500f - index * 32) }
     }
 
     override fun show() {

@@ -13,6 +13,8 @@ private const val LOCK_DELAY_1 = 0.5f
 private const val LOCK_DELAY_2 = 5f
 // max amount of time piece locks no matter
 private const val LOCK_DELAY_3 = 20f
+// time after piece placed that garbage appears
+private const val GARBAGE_DELAY = 0.5f
 
 class Grid(
     private val width: Int,
@@ -44,7 +46,7 @@ class Grid(
     var canHold = true
     private var holdPiece: Piece? = null
     private val bag = mutableListOf<Piece>()
-    private val garbage = listOf(4, 7, 2)
+    private val garbage = mutableListOf<Int>()
 
     private val content = Array(height * 2) { y ->
         Array(width) { x ->
@@ -56,6 +58,8 @@ class Grid(
     var piecesPlaced = 0
     private var combo = 0
     private var b2b = 0
+    private var linesSent = 0
+    private var totalAttack = 0
     private var attack = 0
 
     private var clockTimer = 0f
@@ -69,6 +73,8 @@ class Grid(
     private var startRotationTimer = false
     private var rotationTimer = 0f
     private var longRotationTimer = 0f
+    private var startGarbageTimer = false
+    private var garbageTimer = 0f
 
     var rightHeld = false
     var leftHeld = false
@@ -83,8 +89,9 @@ class Grid(
         stats[PPS] = piecesPlaced / clockTimer
         stats[COMBO] = combo.toFloat()
         stats[B2B] = b2b.toFloat()
-        stats[ATT] = attack.toFloat()
-        stats[APM] = attack / clockTimer * 60
+        stats[ATT] = totalAttack.toFloat()
+        stats[APM] = totalAttack / clockTimer * 60
+        stats[LINES_SENT] = linesSent.toFloat()
 
         gravityTimer += dt
         if (gravityTimer >= GRAVITY) {
@@ -126,6 +133,15 @@ class Grid(
 
         lockDelay3Timer += dt
         if (lockDelay3Timer >= LOCK_DELAY_3) hardDrop()
+
+        if (startGarbageTimer) {
+            garbageTimer += dt
+            if (garbageTimer >= GARBAGE_DELAY) {
+                receiveGarbage()
+                garbageTimer = 0f
+                startGarbageTimer = false
+            }
+        }
     }
 
     fun isWithinBounds(x: Int, y: Int): Boolean {
@@ -136,53 +152,8 @@ class Grid(
         return !content[y][x].filled
     }
 
-    fun receiveGarbage() {
-        var topOfStack = 0
-        for (y in height - 1 downTo 0) {
-            if (content[y].any { it.filled }) {
-                topOfStack = y
-                break
-            }
-        }
-        val lines = garbage.sum()
-
-        for (y in topOfStack downTo 0) {
-            for (x in 0 until width) {
-                if (y + lines < height * 2) {
-                    content[y + lines][x].run {
-                        filled = content[y][x].filled
-                        square.pieceType = content[y][x].square.pieceType
-                    }
-                }
-                content[y][x].run {
-                    filled = false
-                    square.pieceType = PieceType.None
-                }
-            }
-        }
-        var currY = 0
-        for (i in garbage.size - 1 downTo 0) {
-            var numLines = garbage[i]
-            if (currY + numLines > height * 2) {
-               numLines = height * 2 - currY
-            }
-            val holeX = MathUtils.random(width - 1)
-            for (y in currY until currY + numLines) {
-                for (x in 0 until width) {
-                    if (x != holeX) {
-                        content[y][x].run {
-                            filled = true
-                            square.pieceType = PieceType.Garbage
-                        }
-                    }
-                }
-            }
-            currY += numLines
-            if (currY >= height * 2) break
-        }
-        // top out
-        if (lines >= height) reset()
-        if (!currPiece.canMove(0, -1)) reset()
+    fun queueGarbage(numLines: Int) {
+        garbage.add(numLines)
     }
 
     fun addSquare(x: Int, y: Int, square: Square) {
@@ -229,6 +200,7 @@ class Grid(
     fun getLineClears(squares: Array<Square>) {
         startRow = -1
         numLinesToClear = 0
+        attack = 0
 
         for (y in height - 1 downTo 0) {
             var rowFilled = true
@@ -245,6 +217,9 @@ class Grid(
 
         if (numLinesToClear <= 0) {
             combo = 0
+            if (garbage.isNotEmpty()) {
+                startGarbageTimer = true
+            }
             return
         } else {
             combo++
@@ -292,6 +267,9 @@ class Grid(
             stats[PC]++
             attack += 10
         }
+        totalAttack += attack
+        cancelGarbage()
+        linesSent += attack
     }
 
     private fun applyLineClears(lines: Int, b2b: Boolean) {
@@ -345,10 +323,16 @@ class Grid(
         canHold = true
         piecesPlaced = 0
         clockTimer = 0f
+        garbage.clear()
 
         combo = 0
         b2b = 0
-        attack = 0
+        totalAttack = 0
+        linesSent = 0
+
+        startLockDelay2 = false
+        startGarbageTimer = false
+        garbageTimer = 0f
 
         for (i in stats.indices) stats[i] = 0f
     }
@@ -367,7 +351,7 @@ class Grid(
         for (y in 0 until height * 2) {
             for (x in 0 until width) {
                 if (y < height) {
-                    batch.draw(res.getTexture("unit"),
+                    batch.draw(res.unit,
                         screenX + content[y][x].x * SQUARE_SIZE,
                         screenY + content[y][x].y * SQUARE_SIZE)
                 }
@@ -403,6 +387,91 @@ class Grid(
                     x + it.x * SQUARE_SIZE,
                     y + it.y * SQUARE_SIZE)
             }
+        }
+        batch.draw(res.red, screenX - 10, screenY, 10f, getGarbageBarHeight())
+    }
+
+    private fun receiveGarbage() {
+        var topOfStack = 0
+        for (y in height - 1 downTo 0) {
+            if (content[y].any { it.filled }) {
+                topOfStack = y
+                break
+            }
+        }
+        val lines = garbage.sum()
+
+        for (y in topOfStack downTo 0) {
+            for (x in 0 until width) {
+                if (y + lines < height * 2) {
+                    content[y + lines][x].run {
+                        filled = content[y][x].filled
+                        square.pieceType = content[y][x].square.pieceType
+                    }
+                }
+                content[y][x].run {
+                    filled = false
+                    square.pieceType = PieceType.None
+                }
+            }
+        }
+        var currY = 0
+        for (i in garbage.size - 1 downTo 0) {
+            var numLines = garbage[i]
+            if (currY + numLines > height * 2) {
+                numLines = height * 2 - currY
+            }
+            val holeX = MathUtils.random(width - 1)
+            for (y in currY until currY + numLines) {
+                for (x in 0 until width) {
+                    if (x != holeX) {
+                        content[y][x].run {
+                            filled = true
+                            square.pieceType = PieceType.Garbage
+                        }
+                    }
+                }
+            }
+            currY += numLines
+            if (currY >= height * 2) break
+        }
+        // top out
+        if (lines >= height) reset()
+        if (!currPiece.canMove(0, -1)) reset()
+
+        garbage.clear()
+    }
+
+    private fun cancelGarbage() {
+        if (garbage.isEmpty()) return
+        if (attack <= 0) return
+        val totalGarbage = garbage.sum()
+        var newAttack = attack - totalGarbage
+        if (newAttack < 0) newAttack = 0
+
+        val remainingGarbage = totalGarbage - attack
+        attack = newAttack
+        if (remainingGarbage <= 0) {
+            garbage.clear()
+            return
+        }
+
+        var numToDrop = 0
+        var total = totalGarbage
+        for (i in garbage.indices) {
+            if (total - garbage[i] > remainingGarbage) {
+                total -= garbage[i]
+                numToDrop++
+            } else if (total - garbage[i] < remainingGarbage) {
+                garbage[i] -= total - remainingGarbage
+                break
+            } else {
+                numToDrop++
+                break
+            }
+        }
+        repeat(numToDrop) {
+            garbage.removeAt(0)
         }
     }
 
@@ -441,5 +510,12 @@ class Grid(
 
         rotationTimer = 0f
         longRotationTimer = 0f
+    }
+
+    private fun getGarbageBarHeight(): Float {
+        val lines = garbage.sum()
+        val totalHeight = height.toFloat() * SQUARE_SIZE
+        if (lines > height) return totalHeight
+        return (lines / height.toFloat()) * totalHeight
     }
 }

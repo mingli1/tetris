@@ -12,6 +12,8 @@ class Resources : Disposable {
 
     private val squaresTexture: Array<TextureRegion>
     private val ghostTexture: Array<TextureRegion>
+    val red: TextureRegion
+    val unit: TextureRegion
 
     init {
         assetManager.load("textures.atlas", TextureAtlas::class.java)
@@ -21,6 +23,8 @@ class Resources : Disposable {
 
         squaresTexture = getTexture("squares").split(32, 32)[0]
         ghostTexture = getTexture("squares").split(32, 32)[1]
+        red = getTexture("red")
+        unit = getTexture("unit")
     }
 
     fun getTexture(key: String): TextureRegion =

@@ -149,7 +149,7 @@ class InputHandler(private val grid: Grid) : InputProcessor {
                 grid.reset()
             }
             Input.Keys.G -> {
-                grid.receiveGarbage()
+                grid.queueGarbage(4)
             }
         }
         return true
