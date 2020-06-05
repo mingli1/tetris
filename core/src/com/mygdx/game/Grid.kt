@@ -53,8 +53,7 @@ class Grid(
             Unit(Square(this, PieceType.None), x, y, false)
         }
     }
-    private var startRow = -1
-    private var numLinesToClear = 0
+    private val rowsToClear = mutableListOf<Int>()
     var piecesPlaced = 0
     private var combo = 0
     private var b2b = 0
@@ -214,8 +213,7 @@ class Grid(
     }
 
     fun getLineClears(squares: Array<Square>) {
-        startRow = -1
-        numLinesToClear = 0
+        rowsToClear.clear()
         attack = 0
 
         for (y in height - 1 downTo 0) {
@@ -225,13 +223,11 @@ class Grid(
                     rowFilled = false
                 }
             }
-            if (rowFilled) {
-                if (startRow == -1) startRow = y
-                numLinesToClear++
-            }
+            if (rowFilled) rowsToClear.add(y)
         }
+        val numLinesToClear = rowsToClear.size
 
-        if (numLinesToClear <= 0) {
+        if (numLinesToClear == 0) {
             combo = 0
             if (garbage.isNotEmpty()) {
                 startGarbageTimer = true
@@ -267,15 +263,19 @@ class Grid(
     }
 
     fun clearLines() {
-        if (numLinesToClear == 0) return
-        for (i in startRow + 1 until height * 2) {
-            content[i - numLinesToClear].forEachIndexed { index, unit ->
-                val topUnit = content[i][index]
-                unit.filled = topUnit.filled
-                unit.square.pieceType = topUnit.square.pieceType
+        if (rowsToClear.isEmpty()) return
+        rowsToClear.forEach { row ->
+            if (row + 1 < height * 2) {
+                for (i in row + 1 until height * 2) {
+                    content[i - 1].forEachIndexed { index, unit ->
+                        val topUnit = content[i][index]
+                        unit.filled = topUnit.filled
+                        unit.square.pieceType = topUnit.square.pieceType
 
-                topUnit.filled = false
-                topUnit.square.pieceType = PieceType.None
+                        topUnit.filled = false
+                        topUnit.square.pieceType = PieceType.None
+                    }
+                }
             }
         }
 
